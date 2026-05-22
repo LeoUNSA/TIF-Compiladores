@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Arch Linux) (preloaded format=pdflatex 2026.5.18)  21 MAY 2026 20:46
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Arch Linux) (preloaded format=pdflatex 2026.5.18)  21 MAY 2026 21:10
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -499,36 +499,42 @@ LaTeX Font Info:    Trying to load font information for OT1+pcr on input line 1
 
 (/usr/share/texmf-dist/tex/latex/psnfss/ot1pcr.fd
 File: ot1pcr.fd 2001/06/04 font definitions for OT1/pcr.
-)
-
-LaTeX Warning: `h' float specifier changed to `ht'.
-
+) [2]
 LaTeX Font Info:    Trying to load font information for OMS+pcr on input line 1
-86.
+88.
+
 (/usr/share/texmf-dist/tex/latex/psnfss/omspcr.fd
 File: omspcr.fd 
 )
 LaTeX Font Info:    Font shape `OMS/pcr/m/n' in size <10> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 186.
- [2]
-Underfull \hbox (badness 10000) in paragraph at lines 188--189
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 188.
+
+Underfull \hbox (badness 10000) in paragraph at lines 190--191
 []\OT1/ptm/m/n/10 Instrucciones de I/O in-tegradas: \OT1/pcr/m/n/10 print(...)\
 OT1/ptm/m/n/10 ,
  []
 
 Package hyperref Info: bookmark level for unknown lstlisting defaults to 0 on i
-nput line 195.
+nput line 197.
 LaTeX Font Info:    Font shape `OMS/pcr/m/n' in size <8> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 228.
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 230.
 
-Overfull \hbox (9.31158pt too wide) in paragraph at lines 256--270
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+
+Overfull \hbox (9.31158pt too wide) in paragraph at lines 258--272
  [][] 
  []
 
 
-LaTeX Warning: Reference `fig:ast' on page 3 undefined on input line 272.
+LaTeX Warning: Reference `fig:ast' on page 3 undefined on input line 274.
 
 [3]
+Underfull \hbox (badness 4479) in paragraph at lines 356--357
+[]\OT1/ptm/m/n/10 Las fases pen-di-entes |an[]alisis sem[]antico, tabla de
+ []
+
+[4]
 
 ** Conference Paper **
 Before submitting the final camera ready copy, remember to:
@@ -540,7 +546,9 @@ Before submitting the final camera ready copy, remember to:
  uses only Type 1 fonts and that every step in the generation
  process uses the appropriate paper size.
 
-[4] (./IEEE-conference-template-062824.aux)
+[5
+
+] (./IEEE-conference-template-062824.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
@@ -549,18 +557,28 @@ L3 programming layer <2026-01-19>
 
 LaTeX Warning: There were undefined references.
 
-Package rerunfilecheck Info: File `IEEE-conference-template-062824.out' has not
- changed.
-(rerunfilecheck)             Checksum: D1C0952C1F045E8D5F73EE341EC86029;3882.
+
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
+
+
+Package rerunfilecheck Warning: File `IEEE-conference-template-062824.out' has 
+changed.
+(rerunfilecheck)                Rerun to get outlines right
+(rerunfilecheck)                or use package `bookmark'.
+
+Package rerunfilecheck Info: Checksums for `IEEE-conference-template-062824.out
+':
+(rerunfilecheck)             Before: D1C0952C1F045E8D5F73EE341EC86029;3882
+(rerunfilecheck)             After:  273F7E941E1C906AD8410E503C65C2AD;4025.
  ) 
 Here is how much of TeX's memory you used:
- 13155 strings out of 469515
- 197709 string characters out of 5470807
- 887358 words of memory out of 5000000
+ 13156 strings out of 469515
+ 197715 string characters out of 5470807
+ 818358 words of memory out of 5000000
  41541 multiletter control sequences out of 15000+600000
  674519 words of font info for 136 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 75i,11n,79p,1374b,1975s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,11n,79p,1389b,1991s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/
 texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/share/texmf-dist/font
 s/type1/public/amsfonts/cm/cmsy8.pfb></usr/share/texmf-dist/fonts/type1/urw/cou
@@ -568,10 +586,10 @@ rier/ucrb8a.pfb></usr/share/texmf-dist/fonts/type1/urw/courier/ucrr8a.pfb></usr
 /share/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/share/texmf-dist/fonts
 /type1/urw/times/utmbi8a.pfb></usr/share/texmf-dist/fonts/type1/urw/times/utmr8
 a.pfb></usr/share/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on IEEE-conference-template-062824.pdf (4 pages, 143112 bytes).
+Output written on IEEE-conference-template-062824.pdf (5 pages, 145257 bytes).
 PDF statistics:
- 271 PDF objects out of 1000 (max. 8388607)
- 244 compressed objects within 3 object streams
- 108 named destinations out of 1000 (max. 500000)
+ 277 PDF objects out of 1000 (max. 8388607)
+ 249 compressed objects within 3 object streams
+ 109 named destinations out of 1000 (max. 500000)
  169 words of extra memory for PDF output out of 10000 (max. 10000000)
 
