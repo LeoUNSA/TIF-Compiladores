@@ -38,43 +38,35 @@
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 \begin{document}
 
-\title{Compiladores Aumentados con IA para Accesibilidad en Entornos de Programación\\
-\thanks{Trabajo desarrollado en el marco del curso de Compiladores, Departamento de Ciencias de la Computación, Universidad Nacional de San Agustín de Arequipa.}
-}
+
 
 \author{
-
 \IEEEauthorblockN{1\textsuperscript{er} Jhonatan B. Uscca Giraldo}
 \IEEEauthorblockA{
 \textit{Departamento de Ciencias de la Computación} \\
 \textit{Universidad Nacional de San Agustin de Arequipa} \\
 Arequipa, Perú \\
 jusccag@unsa.edu.pe}
-
 \and
 \IEEEauthorblockN{2\textsuperscript{nd} Leonardo Montoya Choque}
 \IEEEauthorblockA{\textit{Departamento de Ciencias de la Computacion} \\
 \textit{Universidad Nacional de San Agustin de Arequipa}\\
 Arequipa, Peru \\
 lmontoyac@unsa.edu.pe}
-
 }
 
 \maketitle
 
 \begin{abstract}
-
-Este trabajo presenta el diseño e implementación inicial de \textit{SemanticC}, una herramienta de línea de comandos que actúa como asistente semántico accesible para código fuente, orientada a desarrolladores con discapacidad visual. A diferencia de asistentes de IA genéricos que operan sobre texto fuente crudo, SemanticC procesa el código a través de un compilador propio y usa las representaciones internas resultantes —tokens anotados, Árbol de Sintaxis Abstracta (AST), y en fases futuras tabla de símbolos y Grafo de Flujo de Control (CFG)— como contexto verificado para un modelo de lenguaje de gran escala (LLM). Esto permite responder consultas como ``explica qué hace esta función'' o ``describe el alcance de esta variable'' con respuestas ancladas en la semántica formal del programa, no en inferencias sobre texto ambiguo. Como sustrato de demostración se diseña \textit{MiniLang}, un lenguaje imperativo de tipado estático implementado en Python. El compilador de MiniLang incluye un analizador léxico completo con 68 tipos de token, un analizador sintáctico por descenso recursivo con gramática EBNF completa y generación de AST con patrón Visitor, validado por 78 pruebas automatizadas. Las fases de análisis semántico, CFG e integración con LLM constituyen el trabajo futuro inmediato.
+Este trabajo presents el diseño e implementación inicial de \textit{SemanticC}, una herramienta de línea de comandos que actúa como asistente semántico accesible para código fuente, orientada a desarrolladores con discapacidad visual. A diferencia de asistentes de IA genéricos que operan sobre texto fuente crudo, SemanticC procesa el código a través de un compilador propio y usa las representaciones internas resultantes —tokens anotados, Árbol de Sintaxis Abstracta (AST), y en fases futuras tabla de símbolos y Grafo de Flujo de Control (CFG)— como contexto verificado para un modelo de lenguaje de gran escala (LLM). Esto permite responder consultas con respuestas ancladas en la semántica formal del programa, no en inferencias sobre texto ambiguo. Como sustrato de demostración se diseña \textit{MiniLang}, un lenguaje imperativo de tipado estático implementado en Python. El compilador de MiniLang incluye un analizador léxico completo con 68 tipos de token, un analizador sintáctico por descenso recursivo con gramática EBNF completa y generación de AST con patrón Visitor, validado por 78 pruebas automatizadas. 
 
 \end{abstract}
-
 
 \begin{IEEEkeywords}
 Accesibilidad, Compiladores, Inteligencia Artificial, Discapacidad Visual, AST, Inclusión, LLM, Ingeniería de Software.
 \end{IEEEkeywords}
 
 \section{Introducción}
-
 El acceso equitativo a herramientas de desarrollo de software continúa siendo un desafío significativo para desarrolladores con discapacidad visual. Aunque los entornos de desarrollo integrados (IDE) modernos han incorporado mecanismos básicos de accesibilidad, gran parte de la interacción con el código sigue dependiendo de representaciones visuales complejas, navegación espacial y retroalimentación gráfica \cite{codetalk}.
 
 Trabajos previos como CodeTalk \cite{codetalk} demostraron que los desarrolladores con discapacidad visual enfrentan barreras estructurales relacionadas con la \textit{discoverability}, \textit{glanceability}, \textit{navigability} y \textit{alertability}. Estas dificultades no surgen únicamente de la interfaz gráfica, sino también de la forma en que la información semántica del código es comunicada al usuario. En la mayoría de herramientas actuales, el compilador produce diagnósticos y representaciones internas altamente precisas —como Árboles de Sintaxis Abstracta (AST), tablas de símbolos y grafos de flujo de control (CFG)— que posteriormente son reducidas a mensajes lineales y visuales.
@@ -83,11 +75,10 @@ En paralelo, el crecimiento reciente de asistentes basados en modelos de lenguaj
 
 En este contexto, el presente trabajo propone el diseño e implementación de \textit{SemanticC}, una herramienta CLI (\textit{command-line interface}) que actúa como asistente semántico accesible para código fuente. SemanticC procesa código a través de un compilador propio —con fases léxica, sintáctica, semántica y de CFG— y expone las representaciones internas resultantes (tokens, AST, tabla de símbolos, CFG) a una capa de interpretación basada en un LLM. Esto permite que el modelo genere respuestas ancladas en la semántica formal del programa, no en texto fuente ambiguo.
 
-A diferencia de un asistente de IA genérico, SemanticC responde consultas específicas: explicar qué hace una función, describir el alcance de una variable, interpretar un error del compilador o navegar la estructura jerárquica de un programa; todo ello sin depender de interfaces visuales. El objetivo central es evaluar si el uso de representaciones semánticas del compilador como contexto para un LLM mejora la precisión, la comprensibilidad y la utilidad de las explicaciones para desarrolladores con discapacidad visual, en comparación con herramientas que operan sobre texto plano.
+A diferencia de un asistente de IA genérico, SemanticC responderá consultas específicas sin depender de interfaces visuales. El objetivo central es evaluar si el uso de representaciones semánticas del compilador como contexto para un LLM mejora la precisión, la comprensibilidad y la utilidad de las explicaciones para desarrolladores con discapacidad visual, en comparación con herramientas que operan sobre texto plano.
+
 \section{Trabajos Relacionados}
-
 \subsection{Accesibilidad en Entornos de Programación}
-
 Potluri et al. \cite{codetalk} presentaron CodeTalk, un sistema orientado a mejorar la accesibilidad en Visual Studio para desarrolladores con discapacidad visual. El trabajo identifica cuatro barreras fundamentales: \textit{discoverability}, \textit{glanceability}, \textit{navigability} y \textit{alertability}. Su propuesta incorpora navegación estructural y retroalimentación auditiva para facilitar la comprensión del código.
 
 Posteriormente, herramientas como Accessible Blockly \cite{accessible_blockly} exploraron representaciones jerárquicas del código basadas en Árboles de Sintaxis Abstracta (AST), permitiendo navegación estructural mediante teclado y lectores de pantalla. Estos trabajos demuestran que las representaciones estructurales del programa pueden reducir la dependencia de lectura línea por línea.
@@ -95,32 +86,25 @@ Posteriormente, herramientas como Accessible Blockly \cite{accessible_blockly} e
 No obstante, la mayoría de soluciones existentes operan principalmente a nivel de interfaz o IDE, sin explotar directamente las representaciones semánticas internas generadas por el compilador.
 
 \subsection{IA Generativa y Comprensión de Código}
-
 El auge reciente de modelos de lenguaje de gran escala (LLM) ha impulsado investigaciones sobre explicación automática de código y asistencia inteligente en programación. Estudios recientes \cite{genai_accessibility} muestran que asistentes como GitHub Copilot pueden mejorar la productividad de desarrolladores con discapacidad visual, especialmente en tareas de generación y comprensión de código.
 
 Sin embargo, estos sistemas presentan limitaciones importantes debido a que operan principalmente sobre texto fuente, sin restricciones semánticas formales provenientes del compilador. Como consecuencia, pueden producir explicaciones ambiguas o incorrectas, fenómeno conocido como \textit{hallucination}.
 
 \subsection{Representaciones Semánticas en Compiladores}
-
 Los compiladores modernos generan múltiples representaciones estructurales del programa, incluyendo Árboles de Sintaxis Abstracta (AST), tablas de símbolos y Grafos de Flujo de Control (CFG). Estas estructuras permiten modelar formalmente la semántica del código y constituyen la base de procesos como análisis semántico, optimización y generación de diagnósticos.
 
 A pesar de su riqueza semántica, estas representaciones rara vez son expuestas directamente como mecanismos de accesibilidad para el usuario final. Esta limitación evidencia una brecha entre la comprensión formal del programa por parte del compilador y la comprensión humana accesible del mismo.
 
 \subsection{Brecha Identificada}
-
 La literatura actual aborda accesibilidad principalmente desde la interfaz de usuario o desde asistentes basados en IA. Sin embargo, existe escasa investigación orientada a integrar simultáneamente:
-
 \begin{itemize}
     \item representaciones semánticas del compilador,
     \item mecanismos de accesibilidad estructural,
     \item y modelos de IA para explicación adaptativa.
 \end{itemize}
-
 Esta brecha motiva la presente investigación, que propone utilizar el compilador como fuente semántica confiable para generar explicaciones accesibles asistidas por IA.
 
-
 \section{Diseño de SemanticC}
-
 SemanticC es una herramienta CLI que recibe un archivo de código fuente MiniLang y una consulta del usuario, y devuelve una respuesta en lenguaje natural basada en las representaciones semánticas internas del compilador. No produce código ejecutable; su salida es semántica accesible. La Figura~\ref{fig:arquitectura} muestra el pipeline completo.
 
 \begin{figure}[h]
@@ -138,7 +122,7 @@ Analizador Sintactico --> AST (nodos tipados)
  Analizador Semantico --> Tabla de Simbolos (*futuro*)
         |
         v
-  Generacion de CFG  --> Grafo de Flujo (*futuro*)
+ Generacion de CFG  --> Grafo de Flujo (*futuro*)
         |
         v
 Capa de Interpretacion IA (LLM + semantica formal)
@@ -151,9 +135,7 @@ Interfaz Accesible Adaptativa
 \end{figure}
 
 \subsection{Capa Semántica del Compilador}
-
 Esta capa es el núcleo técnico de la propuesta. A diferencia de sistemas que operan sobre texto plano, el compilador genera representaciones formales y verificadas del programa:
-
 \begin{itemize}
     \item \textbf{Tokens anotados}: cada unidad léxica incluye tipo, lexema, valor literal y posición exacta (línea:columna), lo que permite diagnósticos precisos.
     \item \textbf{AST tipado}: el árbol de sintaxis abstracta refleja la estructura jerárquica del programa, exponiendo relaciones entre funciones, bloques y expresiones que son invisibles en la lectura lineal.
@@ -162,26 +144,13 @@ Esta capa es el núcleo técnico de la propuesta. A diferencia de sistemas que o
 \end{itemize}
 
 \subsection{Capa de Interpretación Basada en IA}
-
 Esta capa recibe como entrada las estructuras generadas por el compilador (no el texto fuente crudo) y construye un \textit{prompt} estructurado que el LLM usa para formular su respuesta. Al operar sobre representaciones formalmente correctas, el modelo no puede ``alucinar'' la estructura del programa: si el AST dice que \texttt{factorial} es una función recursiva que retorna \texttt{int}, el LLM trabaja desde esa certeza.
 
-Las consultas previstas que SemanticC responderá:
-
-\begin{itemize}
-    \item \texttt{-{}-explain-function <nombre>}: descripción en lenguaje natural de qué hace la función, sus parámetros y su tipo de retorno.
-    \item \texttt{-{}-describe <variable>}: alcance, tipo y contexto de uso de una variable.
-    \item \texttt{-{}-explain-error}: interpretación accesible de cada error léxico o semántico, con indicación de línea y causa probable.
-    \item \texttt{-{}-navigate}: listado jerárquico de funciones, bloques y sentencias del programa.
-\end{itemize}
-
 \section{Implementación: Compilador de MiniLang}
-
 Para demostrar la arquitectura propuesta de forma controlada y reproducible se diseña \textit{MiniLang}, un lenguaje imperativo de tipado estático implementado en Python 3.14. La elección de un lenguaje propio permite controlar completamente las estructuras internas expuestas a la capa de IA y producir diagnósticos pedagógicamente ricos.
 
 \subsection{Características de MiniLang}
-
 MiniLang soporta los siguientes constructos:
-
 \begin{itemize}
     \item Tipos primitivos: \texttt{int}, \texttt{float}, \texttt{bool}, \texttt{string}.
     \item Declaración de variables tipadas: \texttt{int x = 5;}.
@@ -210,7 +179,6 @@ func void main() {
 \end{lstlisting}
 
 \subsection{Analizador Léxico}
-
 El analizador léxico (\textit{Lexer}) transforma el texto fuente en una secuencia de \textit{tokens}, cada uno anotado con tipo, lexema, valor literal y posición exacta en la fuente. La Tabla~\ref{tab:tokens} resume las categorías de tokens reconocidas.
 
 \begin{table}[h]
@@ -248,7 +216,6 @@ Token(KW_PRINT,  'print',   lit=None,    6:5)
 Esta riqueza léxica es la que permite a la capa de IA referirse a posiciones precisas del código al generar explicaciones o diagnósticos accesibles.
 
 \subsection{Analizador Sintáctico y AST}
-
 El analizador sintáctico implementa un parser de \textit{descenso recursivo predictivo} basado en la gramática EBNF de MiniLang. El parser produce un AST compuesto por más de 20 tipos de nodo, organizados en la jerarquía mostrada en la Tabla~\ref{tab:nodos}.
 
 \begin{table}[h]
@@ -300,10 +267,9 @@ Program
       PrintStmt  (4 arg(s))
 \end{lstlisting}
 
-Esta representación estructurada es precisamente la que puede ser consultada por un LLM para generar descripciones accesibles. Por ejemplo, dado el nodo \texttt{IfStmt} con su condición \texttt{BinaryOp op='<='}, el sistema puede generar: \textit{``Si el valor de n es menor o igual que 1, la función retorna 1 directamente''}, sin ambigüedad semántica.
+Esta representación estructurada es precisamente la que puede ser consultada por un LLM para generar descripciones accesibles. Por ejemplo, dado el nodo \texttt{IfStmt} con su condición \texttt{BinaryOp op='<='}, el sistema puede generar explicaciones sin ambigüedad semántica.
 
 \subsection{Manejo de Errores}
-
 El compilador genera errores léxicos y sintácticos con posición exacta (línea y columna), lo que constituye la base para diagnósticos accesibles. Ejemplos de mensajes de error:
 
 \begin{lstlisting}[language={},numbers=none]
@@ -313,9 +279,7 @@ El compilador genera errores léxicos y sintácticos con posición exacta (líne
 \end{lstlisting}
 
 \section{Validación Experimental Preliminar}
-
 La implementación actual fue validada mediante una suite de 78 pruebas automatizadas desarrolladas con \texttt{pytest}. Las pruebas cubren las siguientes dimensiones:
-
 \begin{itemize}
     \item \textbf{Léxico} (31 pruebas): literales de todos los tipos, palabras reservadas, operadores simples y compuestos, delimitadores, comentarios, seguimiento de línea y columna, y detección de 5 categorías de error léxico.
     \item \textbf{Sintáctico} (47 pruebas): declaraciones de variables y funciones, todas las estructuras de control, sentencias de I/O, 12 formas de expresión con precedencia correcta, y 5 categorías de error sintáctico. Se incluye un test de integración con el programa \texttt{factorial.ml} completo.
@@ -323,22 +287,9 @@ La implementación actual fue validada mediante una suite de 78 pruebas automati
 
 Los 78 tests pasan satisfactoriamente, confirmando la corrección del analizador léxico y sintáctico de MiniLang.
 
-\section{Discusión}
-
-\subsection{Ventajas del Enfoque Basado en Compilador}
-
-La principal ventaja de este enfoque frente a sistemas de accesibilidad basados en texto plano o interfaces gráficas es la \textit{certeza semántica} de la información disponible. Cuando la capa de IA consulta el AST para generar una explicación, trabaja sobre una representación formalmente verificada y libre de ambigüedad, a diferencia de un LLM que opera sobre texto fuente y puede malinterpretar contexto o estructura.
-
-Adicionalmente, el AST expone la jerarquía del programa de forma natural, lo que permite implementar navegación estructural (moverse entre funciones, bloques, sentencias) sin depender de representaciones visuales. Esta navegación estructural aborda directamente las barreras de \textit{navigability} y \textit{glanceability} identificadas por CodeTalk \cite{codetalk}.
-
-\subsection{Limitaciones Actuales}
-
-La implementación actual no incluye análisis semántico ni generación de CFG, por lo que errores como uso de variables no declaradas o tipos incompatibles no son detectados aún. La integración con la capa de IA es trabajo futuro. MiniLang fue diseñado como lenguaje de demostración; en una versión de producción sería preferible usar un frontend para un lenguaje establecido (Python, C, Rust) mediante herramientas como Tree-sitter o LLVM.
 
 \section{Trabajo Futuro}
-
 Las siguientes fases de desarrollo están planificadas:
-
 \begin{enumerate}
     \item \textbf{Analizador semántico}: verificación de tipos, resolución de alcances y construcción de la tabla de símbolos.
     \item \textbf{Generación de CFG}: construcción del grafo de flujo de control a partir del AST, para exponer la estructura de ejecución del programa.
@@ -347,18 +298,10 @@ Las siguientes fases de desarrollo están planificadas:
     \item \textbf{Evaluación con usuarios}: estudio empírico con desarrolladores con discapacidad visual, midiendo comprensión, navegación y depuración de código usando métricas como NASA-TLX y tiempo de resolución de tareas.
 \end{enumerate}
 
-\section{Avance Actual y Reflexiones Preliminares}
-
-El trabajo se encuentra en su fase inicial de implementación. Las fases léxica y sintáctica del compilador de MiniLang están completas y validadas con 78 pruebas automatizadas, lo que establece la base técnica de SemanticC: un flujo de tokens anotado con posición exacta y un AST estructurado con 20+ tipos de nodo y patrón Visitor. Estas representaciones son las que alimentarán, en fases subsecuentes, la capa de interpretación basada en IA.
-
-Dos observaciones emergen de lo implementado hasta ahora. Primero, el patrón Visitor del AST demuestra ser una decisión de diseño acertada: permite añadir recorridos nuevos —análisis semántico, serialización para el LLM, generación de CFG— sin modificar las clases de nodo existentes. Segundo, el reporte de errores con posición exacta (línea:columna) confirma que la información disponible en el compilador es suficientemente rica para soportar diagnósticos accesibles precisos, a diferencia de los mensajes genéricos que producen los asistentes de IA basados en texto plano.
-
-Las fases pendientes —análisis semántico, tabla de símbolos, CFG, capa LLM e interfaz de consulta— son las que determinarán si la hipótesis central se sostiene: que anclar un LLM en representaciones formales del compilador mejora la calidad y la confiabilidad de las explicaciones accesibles respecto a sistemas que operan sobre texto crudo. Esa validación es el objetivo del trabajo completo.
 
 
 % --- Referencias ---
 \begin{thebibliography}{99}
-
 \bibitem{codetalk}
 V. Potluri, A. Begel, M. Barnett, et al.,
 "CodeTalk: Improving Programming Environment Accessibility for Visually Impaired Developers,"
@@ -373,7 +316,6 @@ in \textit{Proceedings of ACM SIGACCESS}, 2022.
 S. Savage, C. Flores-Saviaga, et al.,
 "The Impact of Generative AI Coding Assistants on Developers Who Are Visually Impaired,"
 arXiv preprint arXiv:2503.16491, 2025.
-
 \end{thebibliography}
 
 \end{document}
