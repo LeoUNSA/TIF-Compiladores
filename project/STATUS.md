@@ -1,0 +1,111 @@
+# Estado de Implementación — MiniLang Compiler
+
+## Qué es esto
+
+Prototipo del **Compilador Aumentado con IA** descrito en el paper. Implementa las fases léxica y sintáctica de *MiniLang*, un lenguaje imperativo de tipado estático diseñado como sustrato de demostración de la arquitectura propuesta.
+
+---
+
+## Estructura del proyecto
+
+```
+project/
+├── main.py                  ← CLI principal
+├── requirements.txt         ← solo pytest
+├── samples/
+│   ├── hello.ml             ← programa mínimo
+│   ├── factorial.ml         ← recursión + condicionales
+│   └── control_flow.ml      ← while, for, break, continue
+├── src/
+│   ├── errors.py            ← LexerError, ParseError (con línea:columna)
+│   ├── lexer/
+│   │   ├── tokens.py        ← TokenType (68 tipos), Token, KEYWORDS
+│   │   └── lexer.py         ← Lexer completo
+│   └── parser/
+│       ├── ast_nodes.py     ← 20+ nodos AST + patrón Visitor
+│       ├── parser.py        ← Parser recursivo descendente (gramática EBNF)
+│       └── ast_printer.py   ← Pretty-printer del AST
+└── tests/
+    ├── test_lexer.py        ← 31 tests
+    └── test_parser.py       ← 47 tests
+```
+
+---
+
+## Cómo ejecutar
+
+```bash
+# Crear entorno virtual (Arch Linux / cualquier distro)
+python -m venv .venv
+.venv/bin/pip install -r requirements.txt
+
+# Analizar un programa y ver el AST
+.venv/bin/python main.py samples/factorial.ml
+
+# Ver solo el flujo de tokens
+.venv/bin/python main.py --tokens samples/hello.ml
+
+# Correr tests
+.venv/bin/python -m pytest tests/ -v
+```
+
+---
+
+## Resumen de la implementación actual
+
+### Analizador Léxico (`src/lexer/`)
+
+- **68 tipos de token** organizados en: literales, palabras reservadas, operadores, delimitadores, EOF.
+- Palabras reservadas: `int float bool string void func return if else while for break continue print read null true false`.
+- Operadores compuestos: `==`, `!=`, `<=`, `>=`, `&&`, `||`, `+=`, `-=`, `*=`, `/=`.
+- Literales de cadena con secuencias de escape: `\n`, `\t`, `\\`, `\"`.
+- Comentarios de línea (`//`) y de bloque (`/* */`) con soporte multilinea.
+- Reporte de errores con posición exacta `línea:columna`.
+
+### Analizador Sintáctico (`src/parser/`)
+
+- **Parser de descenso recursivo** basado en gramática EBNF completa.
+- Soporta todos los constructos de MiniLang: funciones, variables, if/else, while, for, break, continue, print, read, expresiones con precedencia correcta.
+- **Precedencia de operadores** (de menor a mayor): `||` → `&&` → `==`/`!=` → `<`/`<=`/`>`/`>=` → `+`/`-` → `*`/`/`/`%` → unario.
+- **AST con patrón Visitor**: permite añadir recorridos (análisis semántico, CFG, serialización IA) sin tocar los nodos.
+- **ASTPrinter**: genera representación indentada del AST, legible por humanos y procesable por la capa de IA.
+
+### Tests
+
+| Suite | Tests | Estado |
+|---|---|---|
+| `test_lexer.py` | 31 | ✅ todos pasan |
+| `test_parser.py` | 47 | ✅ todos pasan |
+| **Total** | **78** | ✅ |
+
+---
+
+## Estado respecto a la propuesta completa
+
+| Componente | Estado | Notas |
+|---|---|---|
+| **Diseño del lenguaje MiniLang** | ✅ Completo | Tipos, operadores, constructos de control |
+| **Analizador Léxico** | ✅ Completo | 68 tokens, errores con posición |
+| **Analizador Sintáctico** | ✅ Completo | Descenso recursivo, gramática EBNF |
+| **AST + Visitor** | ✅ Completo | 20+ nodos, ASTPrinter |
+| **Analizador Semántico** | ⏳ Pendiente | Verificación de tipos, alcances |
+| **Tabla de Símbolos** | ⏳ Pendiente | Variables, funciones, scopes |
+| **Generación de CFG** | ⏳ Pendiente | Bloques básicos, aristas de flujo |
+| **Serialización para IA** | ⏳ Pendiente | AST → JSON/prompt estructurado |
+| **Integración LLM** | ⏳ Pendiente | Capa de interpretación con contexto semántico |
+| **Interfaz accesible** | ⏳ Pendiente | Salida para lector de pantalla / navegación por teclado |
+| **Evaluación con usuarios** | ⏳ Pendiente | Estudio empírico con participantes |
+
+### Progreso general de la propuesta: ~30%
+
+Las fases implementadas (léxico + sintáctico + AST) constituyen la base fundamental sobre la que se construye todo lo demás. Sin un AST correcto no es posible hacer análisis semántico, CFG ni integración con IA.
+
+---
+
+## Próximos pasos sugeridos
+
+1. **Analizador semántico** — verificar tipos en expresiones, detectar variables no declaradas, resolver alcances (scopes anidados por bloques/funciones).
+2. **Tabla de símbolos** — estructura de diccionario anidado con tipo, posición de declaración y alcance.
+3. **Generación de CFG** — a partir del AST decorado, construir el grafo de flujo de control.
+4. **Serialización** — exportar AST + tabla de símbolos a JSON para alimentar el contexto del LLM.
+5. **Integración con LLM** — diseño del prompt que combine representaciones del compilador con la consulta del usuario.

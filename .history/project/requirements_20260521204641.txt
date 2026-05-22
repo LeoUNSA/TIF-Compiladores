@@ -1,0 +1,8 @@
+# Dependencias de MiniLang Compiler
+# Instalación: pip install -r requirements.txt
+# Con entorno virtual (recomendado en Arch Linux):
+#   python -m venv .venv
+#   .venv/bin/pip install -r requirements.txt
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+pytest>=9.0

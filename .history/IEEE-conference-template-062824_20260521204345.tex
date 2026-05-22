@@ -1,0 +1,147 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+%Template version as of 6/27/2024
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{hyperref}
+
+% Estilo para bloques de código
+\lstdefinelanguage{MiniLang}{
+  keywords={int,float,bool,string,void,func,return,if,else,while,for,break,continue,print,read,null,true,false},
+  keywordstyle=\bfseries\color{blue!70!black},
+  comment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  commentstyle=\itshape\color{gray},
+  stringstyle=\color{orange!80!black},
+  string=[b]",
+  sensitive=true,
+}
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  numbersep=4pt,
+  tabsize=4,
+  showstringspaces=false,
+  captionpos=b,
+}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\begin{document}
+
+\title{Compiladores Aumentados con IA para Accesibilidad en Entornos de Programación\\
+\thanks{Trabajo desarrollado en el marco del curso de Compiladores, Departamento de Ciencias de la Computación, Universidad Nacional de San Agustín de Arequipa.}
+}
+
+\author{
+
+\IEEEauthorblockN{1\textsuperscript{er} Jhonatan B. Uscca Giraldo}
+\IEEEauthorblockA{
+\textit{Departamento de Ciencias de la Computación} \\
+\textit{Universidad Nacional de San Agustin de Arequipa} \\
+Arequipa, Perú \\
+jusccag@unsa.edu.pe}
+
+\and
+\IEEEauthorblockN{2\textsuperscript{nd} Leonardo Montoya Choque}
+\IEEEauthorblockA{\textit{Departamento de Ciencias de la Computacion} \\
+\textit{Universidad Nacional de San Agustin de Arequipa}\\
+Arequipa, Peru \\
+lmontoyac@unsa.edu.pe}
+
+}
+
+\maketitle
+
+\begin{abstract}
+
+Este trabajo presenta el diseño e implementación inicial de un \textit{Compilador Aumentado con IA} orientado a mejorar la accesibilidad en entornos de programación para desarrolladores con discapacidad visual. A diferencia de enfoques tradicionales centrados en interfaces gráficas o plugins externos, la propuesta aprovecha las representaciones semánticas internas del compilador —tokens anotados, Árboles de Sintaxis Abstracta (AST) y, en fases futuras, Grafos de Flujo de Control (CFG) y tablas de símbolos— como fuente verificada para alimentar una capa de interpretación basada en modelos de lenguaje de gran escala (LLM). Como sustrato de demostración se diseña \textit{MiniLang}, un lenguaje imperativo de tipado estático implementado completamente desde cero en Python. El compilador de MiniLang incluye un analizador léxico completo con 68 tipos de token y reporte de errores con posición exacta, un analizador sintáctico por descenso recursivo con gramática EBNF completa y un generador de AST con patrón Visitor, validado por 78 pruebas automatizadas. El objetivo final es transformar el compilador en un motor semántico accesible capaz de generar explicaciones adaptativas, navegación estructural y diagnósticos comprensibles para usuarios con diversas necesidades de accesibilidad.
+
+\end{abstract}
+
+
+\begin{IEEEkeywords}
+Accesibilidad, Compiladores, Inteligencia Artificial, Discapacidad Visual, AST, Inclusión, LLM, Ingeniería de Software.
+\end{IEEEkeywords}
+
+\section{Introducción}
+
+El acceso equitativo a herramientas de desarrollo de software continúa siendo un desafío significativo para desarrolladores con discapacidad visual. Aunque los entornos de desarrollo integrados (IDE) modernos han incorporado mecanismos básicos de accesibilidad, gran parte de la interacción con el código sigue dependiendo de representaciones visuales complejas, navegación espacial y retroalimentación gráfica \cite{codetalk}.
+
+Trabajos previos como CodeTalk \cite{codetalk} demostraron que los desarrolladores con discapacidad visual enfrentan barreras estructurales relacionadas con la \textit{discoverability}, \textit{glanceability}, \textit{navigability} y \textit{alertability}. Estas dificultades no surgen únicamente de la interfaz gráfica, sino también de la forma en que la información semántica del código es comunicada al usuario. En la mayoría de herramientas actuales, el compilador produce diagnósticos y representaciones internas altamente precisas —como Árboles de Sintaxis Abstracta (AST), tablas de símbolos y grafos de flujo de control (CFG)— que posteriormente son reducidas a mensajes lineales y visuales.
+
+En paralelo, el crecimiento reciente de asistentes basados en modelos de lenguaje de gran escala (LLM) ha abierto nuevas posibilidades para la explicación automática de código y generación de lenguaje natural. Estudios recientes muestran que estas herramientas pueden mejorar la productividad de desarrolladores con discapacidad visual \cite{genai_accessibility}. Sin embargo, dichos sistemas suelen operar únicamente sobre texto fuente, sin integrar formalmente la semántica interna del compilador, lo que introduce problemas de ambigüedad, explicaciones inconsistentes y alucinaciones.
+
+En este contexto, el presente trabajo propone una arquitectura de \textit{Compilador Aumentado con IA}, donde el compilador deja de actuar únicamente como traductor de código y se convierte en un motor semántico capaz de generar representaciones accesibles y adaptativas del programa. La propuesta integra estructuras internas del compilador (AST, CFG y análisis semántico) con una capa de interpretación basada en IA para producir explicaciones estructuradas, navegación jerárquica y diagnósticos comprensibles orientados a usuarios con necesidades de accesibilidad.
+
+A diferencia de enfoques centrados exclusivamente en la interfaz, esta investigación traslada la accesibilidad hacia el núcleo semántico del sistema, utilizando el conocimiento formal del compilador como fuente principal de comprensión del código. El objetivo principal es evaluar si la integración de IA con representaciones semánticas del compilador mejora la comprensión, navegación y depuración de programas en comparación con herramientas tradicionales de accesibilidad.
+\section{Trabajos Relacionados}
+
+\subsection{Accesibilidad en Entornos de Programación}
+
+Potluri et al. \cite{codetalk} presentaron CodeTalk, un sistema orientado a mejorar la accesibilidad en Visual Studio para desarrolladores con discapacidad visual. El trabajo identifica cuatro barreras fundamentales: \textit{discoverability}, \textit{glanceability}, \textit{navigability} y \textit{alertability}. Su propuesta incorpora navegación estructural y retroalimentación auditiva para facilitar la comprensión del código.
+
+Posteriormente, herramientas como Accessible Blockly \cite{accessible_blockly} exploraron representaciones jerárquicas del código basadas en Árboles de Sintaxis Abstracta (AST), permitiendo navegación estructural mediante teclado y lectores de pantalla. Estos trabajos demuestran que las representaciones estructurales del programa pueden reducir la dependencia de lectura línea por línea.
+
+No obstante, la mayoría de soluciones existentes operan principalmente a nivel de interfaz o IDE, sin explotar directamente las representaciones semánticas internas generadas por el compilador.
+
+\subsection{IA Generativa y Comprensión de Código}
+
+El auge reciente de modelos de lenguaje de gran escala (LLM) ha impulsado investigaciones sobre explicación automática de código y asistencia inteligente en programación. Estudios recientes \cite{genai_accessibility} muestran que asistentes como GitHub Copilot pueden mejorar la productividad de desarrolladores con discapacidad visual, especialmente en tareas de generación y comprensión de código.
+
+Sin embargo, estos sistemas presentan limitaciones importantes debido a que operan principalmente sobre texto fuente, sin restricciones semánticas formales provenientes del compilador. Como consecuencia, pueden producir explicaciones ambiguas o incorrectas, fenómeno conocido como \textit{hallucination}.
+
+\subsection{Representaciones Semánticas en Compiladores}
+
+Los compiladores modernos generan múltiples representaciones estructurales del programa, incluyendo Árboles de Sintaxis Abstracta (AST), tablas de símbolos y Grafos de Flujo de Control (CFG). Estas estructuras permiten modelar formalmente la semántica del código y constituyen la base de procesos como análisis semántico, optimización y generación de diagnósticos.
+
+A pesar de su riqueza semántica, estas representaciones rara vez son expuestas directamente como mecanismos de accesibilidad para el usuario final. Esta limitación evidencia una brecha entre la comprensión formal del programa por parte del compilador y la comprensión humana accesible del mismo.
+
+\subsection{Brecha Identificada}
+
+La literatura actual aborda accesibilidad principalmente desde la interfaz de usuario o desde asistentes basados en IA. Sin embargo, existe escasa investigación orientada a integrar simultáneamente:
+
+\begin{itemize}
+    \item representaciones semánticas del compilador,
+    \item mecanismos de accesibilidad estructural,
+    \item y modelos de IA para explicación adaptativa.
+\end{itemize}
+
+Esta brecha motiva la presente investigación, que propone utilizar el compilador como fuente semántica confiable para generar explicaciones accesibles asistidas por IA.
+
+
+% --- Referencias ---
+\begin{thebibliography}{99}
+
+\bibitem{codetalk}
+V. Potluri, A. Begel, M. Barnett, et al.,
+"CodeTalk: Improving Programming Environment Accessibility for Visually Impaired Developers,"
+in \textit{Proceedings of the 2018 CHI Conference on Human Factors in Computing Systems}, ACM, 2018.
+
+\bibitem{accessible_blockly}
+E. Schanzer and S. Bahram,
+"Accessible Blockly: An Accessible Programming Blocks Editor,"
+in \textit{Proceedings of ACM SIGACCESS}, 2022.
+
+\bibitem{genai_accessibility}
+S. Savage, C. Flores-Saviaga, et al.,
+"The Impact of Generative AI Coding Assistants on Developers Who Are Visually Impaired,"
+arXiv preprint arXiv:2503.16491, 2025.
+
+\end{thebibliography}
+
+
+\vspace{12pt}
+\color{red}
+IEEE conference templates contain guidance text for composing and formatting conference papers. Please ensure that all template text is removed from your conference paper prior to submission to the conference. Failure to remove the template text from your paper may result in your paper not being published.
+
+\end{document}

@@ -1,0 +1,375 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+%Template version as of 6/27/2024
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{hyperref}
+
+% Estilo para bloques de código
+\lstdefinelanguage{MiniLang}{
+  keywords={int,float,bool,string,void,func,return,if,else,while,for,break,continue,print,read,null,true,false},
+  keywordstyle=\bfseries\color{blue!70!black},
+  comment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  commentstyle=\itshape\color{gray},
+  stringstyle=\color{orange!80!black},
+  string=[b]",
+  sensitive=true,
+}
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  numbersep=4pt,
+  tabsize=4,
+  showstringspaces=false,
+  captionpos=b,
+}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\begin{document}
+
+\title{Compiladores Aumentados con IA para Accesibilidad en Entornos de Programación\\
+\thanks{Trabajo desarrollado en el marco del curso de Compiladores, Departamento de Ciencias de la Computación, Universidad Nacional de San Agustín de Arequipa.}
+}
+
+\author{
+
+\IEEEauthorblockN{1\textsuperscript{er} Jhonatan B. Uscca Giraldo}
+\IEEEauthorblockA{
+\textit{Departamento de Ciencias de la Computación} \\
+\textit{Universidad Nacional de San Agustin de Arequipa} \\
+Arequipa, Perú \\
+jusccag@unsa.edu.pe}
+
+\and
+\IEEEauthorblockN{2\textsuperscript{nd} Leonardo Montoya Choque}
+\IEEEauthorblockA{\textit{Departamento de Ciencias de la Computacion} \\
+\textit{Universidad Nacional de San Agustin de Arequipa}\\
+Arequipa, Peru \\
+lmontoyac@unsa.edu.pe}
+
+}
+
+\maketitle
+
+\begin{abstract}
+
+Este trabajo presenta el diseño e implementación inicial de un \textit{Compilador Aumentado con IA} orientado a mejorar la accesibilidad en entornos de programación para desarrolladores con discapacidad visual. A diferencia de enfoques tradicionales centrados en interfaces gráficas o plugins externos, la propuesta aprovecha las representaciones semánticas internas del compilador —tokens anotados, Árboles de Sintaxis Abstracta (AST) y, en fases futuras, Grafos de Flujo de Control (CFG) y tablas de símbolos— como fuente verificada para alimentar una capa de interpretación basada en modelos de lenguaje de gran escala (LLM). Como sustrato de demostración se diseña \textit{MiniLang}, un lenguaje imperativo de tipado estático implementado completamente desde cero en Python. El compilador de MiniLang incluye un analizador léxico completo con 68 tipos de token y reporte de errores con posición exacta, un analizador sintáctico por descenso recursivo con gramática EBNF completa y un generador de AST con patrón Visitor, validado por 78 pruebas automatizadas. El objetivo final es transformar el compilador en un motor semántico accesible capaz de generar explicaciones adaptativas, navegación estructural y diagnósticos comprensibles para usuarios con diversas necesidades de accesibilidad.
+
+\end{abstract}
+
+
+\begin{IEEEkeywords}
+Accesibilidad, Compiladores, Inteligencia Artificial, Discapacidad Visual, AST, Inclusión, LLM, Ingeniería de Software.
+\end{IEEEkeywords}
+
+\section{Introducción}
+
+El acceso equitativo a herramientas de desarrollo de software continúa siendo un desafío significativo para desarrolladores con discapacidad visual. Aunque los entornos de desarrollo integrados (IDE) modernos han incorporado mecanismos básicos de accesibilidad, gran parte de la interacción con el código sigue dependiendo de representaciones visuales complejas, navegación espacial y retroalimentación gráfica \cite{codetalk}.
+
+Trabajos previos como CodeTalk \cite{codetalk} demostraron que los desarrolladores con discapacidad visual enfrentan barreras estructurales relacionadas con la \textit{discoverability}, \textit{glanceability}, \textit{navigability} y \textit{alertability}. Estas dificultades no surgen únicamente de la interfaz gráfica, sino también de la forma en que la información semántica del código es comunicada al usuario. En la mayoría de herramientas actuales, el compilador produce diagnósticos y representaciones internas altamente precisas —como Árboles de Sintaxis Abstracta (AST), tablas de símbolos y grafos de flujo de control (CFG)— que posteriormente son reducidas a mensajes lineales y visuales.
+
+En paralelo, el crecimiento reciente de asistentes basados en modelos de lenguaje de gran escala (LLM) ha abierto nuevas posibilidades para la explicación automática de código y generación de lenguaje natural. Estudios recientes muestran que estas herramientas pueden mejorar la productividad de desarrolladores con discapacidad visual \cite{genai_accessibility}. Sin embargo, dichos sistemas suelen operar únicamente sobre texto fuente, sin integrar formalmente la semántica interna del compilador, lo que introduce problemas de ambigüedad, explicaciones inconsistentes y alucinaciones.
+
+En este contexto, el presente trabajo propone una arquitectura de \textit{Compilador Aumentado con IA}, donde el compilador deja de actuar únicamente como traductor de código y se convierte en un motor semántico capaz de generar representaciones accesibles y adaptativas del programa. La propuesta integra estructuras internas del compilador (AST, CFG y análisis semántico) con una capa de interpretación basada en IA para producir explicaciones estructuradas, navegación jerárquica y diagnósticos comprensibles orientados a usuarios con necesidades de accesibilidad.
+
+A diferencia de enfoques centrados exclusivamente en la interfaz, esta investigación traslada la accesibilidad hacia el núcleo semántico del sistema, utilizando el conocimiento formal del compilador como fuente principal de comprensión del código. El objetivo principal es evaluar si la integración de IA con representaciones semánticas del compilador mejora la comprensión, navegación y depuración de programas en comparación con herramientas tradicionales de accesibilidad.
+\section{Trabajos Relacionados}
+
+\subsection{Accesibilidad en Entornos de Programación}
+
+Potluri et al. \cite{codetalk} presentaron CodeTalk, un sistema orientado a mejorar la accesibilidad en Visual Studio para desarrolladores con discapacidad visual. El trabajo identifica cuatro barreras fundamentales: \textit{discoverability}, \textit{glanceability}, \textit{navigability} y \textit{alertability}. Su propuesta incorpora navegación estructural y retroalimentación auditiva para facilitar la comprensión del código.
+
+Posteriormente, herramientas como Accessible Blockly \cite{accessible_blockly} exploraron representaciones jerárquicas del código basadas en Árboles de Sintaxis Abstracta (AST), permitiendo navegación estructural mediante teclado y lectores de pantalla. Estos trabajos demuestran que las representaciones estructurales del programa pueden reducir la dependencia de lectura línea por línea.
+
+No obstante, la mayoría de soluciones existentes operan principalmente a nivel de interfaz o IDE, sin explotar directamente las representaciones semánticas internas generadas por el compilador.
+
+\subsection{IA Generativa y Comprensión de Código}
+
+El auge reciente de modelos de lenguaje de gran escala (LLM) ha impulsado investigaciones sobre explicación automática de código y asistencia inteligente en programación. Estudios recientes \cite{genai_accessibility} muestran que asistentes como GitHub Copilot pueden mejorar la productividad de desarrolladores con discapacidad visual, especialmente en tareas de generación y comprensión de código.
+
+Sin embargo, estos sistemas presentan limitaciones importantes debido a que operan principalmente sobre texto fuente, sin restricciones semánticas formales provenientes del compilador. Como consecuencia, pueden producir explicaciones ambiguas o incorrectas, fenómeno conocido como \textit{hallucination}.
+
+\subsection{Representaciones Semánticas en Compiladores}
+
+Los compiladores modernos generan múltiples representaciones estructurales del programa, incluyendo Árboles de Sintaxis Abstracta (AST), tablas de símbolos y Grafos de Flujo de Control (CFG). Estas estructuras permiten modelar formalmente la semántica del código y constituyen la base de procesos como análisis semántico, optimización y generación de diagnósticos.
+
+A pesar de su riqueza semántica, estas representaciones rara vez son expuestas directamente como mecanismos de accesibilidad para el usuario final. Esta limitación evidencia una brecha entre la comprensión formal del programa por parte del compilador y la comprensión humana accesible del mismo.
+
+\subsection{Brecha Identificada}
+
+La literatura actual aborda accesibilidad principalmente desde la interfaz de usuario o desde asistentes basados en IA. Sin embargo, existe escasa investigación orientada a integrar simultáneamente:
+
+\begin{itemize}
+    \item representaciones semánticas del compilador,
+    \item mecanismos de accesibilidad estructural,
+    \item y modelos de IA para explicación adaptativa.
+\end{itemize}
+
+Esta brecha motiva la presente investigación, que propone utilizar el compilador como fuente semántica confiable para generar explicaciones accesibles asistidas por IA.
+
+
+\section{Arquitectura Propuesta}
+
+La arquitectura del Compilador Aumentado con IA se organiza en dos capas principales: una capa semántica del compilador y una capa de interpretación basada en IA, tal como se muestra en la Figura~\ref{fig:arquitectura}.
+
+\begin{figure}[h]
+\centering
+\begin{lstlisting}[language={},frame=single,numbers=none,basicstyle=\ttfamily\scriptsize]
+Codigo Fuente (.ml)
+        |
+        v
+ Analizador Lexico  --> Tokens (tipo, lexema, linea:col)
+        |
+        v
+Analizador Sintactico --> AST (nodos tipados)
+        |
+        v
+ Analizador Semantico --> Tabla de Simbolos (*futuro*)
+        |
+        v
+  Generacion de CFG  --> Grafo de Flujo (*futuro*)
+        |
+        v
+Capa de Interpretacion IA (LLM + semantica formal)
+        |
+        v
+Interfaz Accesible Adaptativa
+\end{lstlisting}
+\caption{Pipeline del Compilador Aumentado con IA. Las fases marcadas como ``futuro'' están planificadas pero aún no implementadas.}
+\label{fig:arquitectura}
+\end{figure}
+
+\subsection{Capa Semántica del Compilador}
+
+Esta capa es el núcleo técnico de la propuesta. A diferencia de sistemas que operan sobre texto plano, el compilador genera representaciones formales y verificadas del programa:
+
+\begin{itemize}
+    \item \textbf{Tokens anotados}: cada unidad léxica incluye tipo, lexema, valor literal y posición exacta (línea:columna), lo que permite diagnósticos precisos.
+    \item \textbf{AST tipado}: el árbol de sintaxis abstracta refleja la estructura jerárquica del programa, exponiendo relaciones entre funciones, bloques y expresiones que son invisibles en la lectura lineal.
+    \item \textbf{Tabla de símbolos} (fase futura): registro de variables y funciones con tipo, alcance y sitio de declaración.
+    \item \textbf{CFG} (fase futura): grafo de flujo de control que modela caminos de ejecución, bucles y ramas condicionales.
+\end{itemize}
+
+\subsection{Capa de Interpretación Basada en IA}
+
+Los modelos de lenguaje (LLM) recibirán como contexto las estructuras generadas por el compilador en lugar de texto fuente crudo. Esto reduce la ambigüedad y el riesgo de alucinaciones, ya que el modelo opera sobre representaciones formalmente correctas. Las funciones esperadas incluyen:
+
+\begin{itemize}
+    \item explicación de funciones y bloques en lenguaje natural,
+    \item resúmenes semánticos adaptados al nivel del usuario,
+    \item interpretación accesible de errores del compilador,
+    \item navegación estructural guiada por el AST.
+\end{itemize}
+
+\section{Implementación: Compilador de MiniLang}
+
+Para demostrar la arquitectura propuesta de forma controlada y reproducible se diseña \textit{MiniLang}, un lenguaje imperativo de tipado estático implementado en Python 3.14. La elección de un lenguaje propio permite controlar completamente las estructuras internas expuestas a la capa de IA y producir diagnósticos pedagógicamente ricos.
+
+\subsection{Características de MiniLang}
+
+MiniLang soporta los siguientes constructos:
+
+\begin{itemize}
+    \item Tipos primitivos: \texttt{int}, \texttt{float}, \texttt{bool}, \texttt{string}.
+    \item Declaración de variables tipadas: \texttt{int x = 5;}.
+    \item Funciones con parámetros y tipo de retorno: \texttt{func int f(int a)~\{~\}}.
+    \item Estructuras de control: \texttt{if/else}, \texttt{while}, \texttt{for}, \texttt{break}, \texttt{continue}.
+    \item Instrucciones de I/O integradas: \texttt{print(...)}, \texttt{read(...)}.
+    \item Operadores aritméticos, relacionales, lógicos y de asignación compuesta.
+    \item Comentarios de línea (\texttt{//}) y de bloque (\texttt{/* */}).
+\end{itemize}
+
+El fragmento de código a continuación muestra un programa de ejemplo que calcula el factorial de forma recursiva:
+
+\begin{lstlisting}[language=MiniLang, caption={factorial.ml -- programa de prueba en MiniLang}]
+func int factorial(int n) {
+    if (n <= 1) {
+        return 1;
+    }
+    return n * factorial(n - 1);
+}
+
+func void main() {
+    int numero = 10;
+    int resultado = factorial(numero);
+    print("factorial de ", numero, " es: ", resultado);
+}
+\end{lstlisting}
+
+\subsection{Analizador Léxico}
+
+El analizador léxico (\textit{Lexer}) transforma el texto fuente en una secuencia de \textit{tokens}, cada uno anotado con tipo, lexema, valor literal y posición exacta en la fuente. La Tabla~\ref{tab:tokens} resume las categorías de tokens reconocidas.
+
+\begin{table}[h]
+\caption{Categorías de tokens de MiniLang}
+\label{tab:tokens}
+\centering
+\begin{tabular}{ll}
+\hline
+\textbf{Categoría} & \textbf{Ejemplos} \\
+\hline
+Literales & \texttt{42}, \texttt{3.14}, \texttt{"hola"}, \texttt{true} \\
+Palabras reservadas & \texttt{int}, \texttt{func}, \texttt{if}, \texttt{while}, \ldots \\
+Operadores aritméticos & \texttt{+}, \texttt{-}, \texttt{*}, \texttt{/}, \texttt{\%} \\
+Operadores relacionales & \texttt{==}, \texttt{!=}, \texttt{<}, \texttt{<=}, \texttt{>}, \texttt{>=} \\
+Operadores lógicos & \texttt{\&\&}, \texttt{||}, \texttt{!} \\
+Asignación compuesta & \texttt{=}, \texttt{+=}, \texttt{-=}, \texttt{*=}, \texttt{/=} \\
+Delimitadores & \texttt{(}, \texttt{)}, \texttt{\{}, \texttt{\}}, \texttt{;}, \texttt{,} \\
+\hline
+\end{tabular}
+\end{table}
+
+El lexer implementa reporte de errores con posición exacta (\texttt{línea:columna}), soporte a secuencias de escape en cadenas y comentarios de línea y bloque. Un fragmento del flujo de tokens producido para el programa \texttt{hello.ml} ilustra la información disponible:
+
+\begin{lstlisting}[language={},numbers=none,caption={Flujo de tokens anotado de hello.ml}]
+Token(KW_FUNC,   'func',    lit=None,    4:1)
+Token(KW_VOID,   'void',    lit=None,    4:6)
+Token(IDENTIFIER,'main',    lit=None,    4:11)
+Token(KW_STRING, 'string',  lit=None,    5:5)
+Token(IDENTIFIER,'nombre',  lit=None,    5:12)
+Token(EQ,        '=',       lit=None,    5:19)
+Token(STRING,    '"Mundo"', lit='Mundo', 5:21)
+Token(KW_PRINT,  'print',   lit=None,    6:5)
+\end{lstlisting}
+
+Esta riqueza léxica es la que permite a la capa de IA referirse a posiciones precisas del código al generar explicaciones o diagnósticos accesibles.
+
+\subsection{Analizador Sintáctico y AST}
+
+El analizador sintáctico implementa un parser de \textit{descenso recursivo predictivo} basado en la gramática EBNF de MiniLang. El parser produce un AST compuesto por más de 20 tipos de nodo, organizados en la jerarquía mostrada en la Tabla~\ref{tab:nodos}.
+
+\begin{table}[h]
+\caption{Jerarquía de nodos del AST de MiniLang}
+\label{tab:nodos}
+\centering
+\begin{tabular}{ll}
+\hline
+\textbf{Categoría} & \textbf{Nodos} \\
+\hline
+Programa & \texttt{Program}, \texttt{Block} \\
+Declaraciones & \texttt{FunctionDecl}, \texttt{VarDecl} \\
+Control & \texttt{IfStmt}, \texttt{WhileStmt}, \texttt{ForStmt} \\
+Sentencias & \texttt{ReturnStmt}, \texttt{BreakStmt}, \texttt{ContinueStmt} \\
+I/O & \texttt{PrintStmt}, \texttt{ReadStmt} \\
+Expresiones & \texttt{BinaryOp}, \texttt{UnaryOp}, \texttt{AssignExpr} \\
+Llamadas & \texttt{CallExpr}, \texttt{IdentifierExpr} \\
+Literales & \texttt{IntLiteral}, \texttt{FloatLiteral}, \texttt{StringLiteral}, \ldots \\
+\hline
+\end{tabular}
+\end{table}
+
+Los nodos implementan el patrón \textit{Visitor}, lo que permite añadir nuevos recorridos del AST (impresión, análisis semántico, generación de CFG, serialización para la capa de IA) sin modificar las clases de nodo. La Figura~\ref{fig:ast} muestra el AST generado para el programa \texttt{factorial.ml}:
+
+\begin{lstlisting}[language={},numbers=none,caption={AST generado para factorial.ml por el ASTPrinter}]
+Program
+  FunctionDecl  name=factorial  return=int  params=(int n)
+    Block
+      IfStmt
+        condition:
+          BinaryOp  op='<='
+            Identifier  name=n
+            IntLiteral  1
+        then:
+          Block
+            ReturnStmt
+              IntLiteral  1
+      ReturnStmt
+        BinaryOp  op='*'
+          Identifier  name=n
+          CallExpr  name=factorial  args=1
+            BinaryOp  op='-'
+              Identifier  name=n
+              IntLiteral  1
+  FunctionDecl  name=main  return=void  params=()
+    Block
+      VarDecl  type=int  name=numero
+      VarDecl  type=int  name=resultado
+      PrintStmt  (4 arg(s))
+\end{lstlisting}
+
+Esta representación estructurada es precisamente la que puede ser consultada por un LLM para generar descripciones accesibles. Por ejemplo, dado el nodo \texttt{IfStmt} con su condición \texttt{BinaryOp op='<='}, el sistema puede generar: \textit{``Si el valor de n es menor o igual que 1, la función retorna 1 directamente''}, sin ambigüedad semántica.
+
+\subsection{Manejo de Errores}
+
+El compilador genera errores léxicos y sintácticos con posición exacta (línea y columna), lo que constituye la base para diagnósticos accesibles. Ejemplos de mensajes de error:
+
+\begin{lstlisting}[language={},numbers=none]
+[LexerError]  Linea 3, Col 8: Cadena de texto sin cerrar
+[ParseError]  Linea 7, Col 1: Se esperaba ';' al final de la declaracion
+[ParseError]  Linea 12, Col 5: Se esperaba ')' al cerrar condicion
+\end{lstlisting}
+
+\section{Validación Experimental Preliminar}
+
+La implementación actual fue validada mediante una suite de 78 pruebas automatizadas desarrolladas con \texttt{pytest}. Las pruebas cubren las siguientes dimensiones:
+
+\begin{itemize}
+    \item \textbf{Léxico} (31 pruebas): literales de todos los tipos, palabras reservadas, operadores simples y compuestos, delimitadores, comentarios, seguimiento de línea y columna, y detección de 5 categorías de error léxico.
+    \item \textbf{Sintáctico} (47 pruebas): declaraciones de variables y funciones, todas las estructuras de control, sentencias de I/O, 12 formas de expresión con precedencia correcta, y 5 categorías de error sintáctico. Se incluye un test de integración con el programa \texttt{factorial.ml} completo.
+\end{itemize}
+
+Los 78 tests pasan satisfactoriamente, confirmando la corrección del analizador léxico y sintáctico de MiniLang.
+
+\section{Discusión}
+
+\subsection{Ventajas del Enfoque Basado en Compilador}
+
+La principal ventaja de este enfoque frente a sistemas de accesibilidad basados en texto plano o interfaces gráficas es la \textit{certeza semántica} de la información disponible. Cuando la capa de IA consulta el AST para generar una explicación, trabaja sobre una representación formalmente verificada y libre de ambigüedad, a diferencia de un LLM que opera sobre texto fuente y puede malinterpretar contexto o estructura.
+
+Adicionalmente, el AST expone la jerarquía del programa de forma natural, lo que permite implementar navegación estructural (moverse entre funciones, bloques, sentencias) sin depender de representaciones visuales. Esta navegación estructural aborda directamente las barreras de \textit{navigability} y \textit{glanceability} identificadas por CodeTalk \cite{codetalk}.
+
+\subsection{Limitaciones Actuales}
+
+La implementación actual no incluye análisis semántico ni generación de CFG, por lo que errores como uso de variables no declaradas o tipos incompatibles no son detectados aún. La integración con la capa de IA es trabajo futuro. MiniLang fue diseñado como lenguaje de demostración; en una versión de producción sería preferible usar un frontend para un lenguaje establecido (Python, C, Rust) mediante herramientas como Tree-sitter o LLVM.
+
+\section{Trabajo Futuro}
+
+Las siguientes fases de desarrollo están planificadas:
+
+\begin{enumerate}
+    \item \textbf{Analizador semántico}: verificación de tipos, resolución de alcances y construcción de la tabla de símbolos.
+    \item \textbf{Generación de CFG}: construcción del grafo de flujo de control a partir del AST, para exponer la estructura de ejecución del programa.
+    \item \textbf{Integración con LLM}: diseño del prompt estructurado que combina información del AST, tabla de símbolos y CFG como contexto para el modelo de lenguaje.
+    \item \textbf{Interfaz accesible}: desarrollo de la capa de salida orientada a lectores de pantalla y navegación por teclado.
+    \item \textbf{Evaluación con usuarios}: estudio empírico con desarrolladores con discapacidad visual, midiendo comprensión, navegación y depuración de código usando métricas como NASA-TLX y tiempo de resolución de tareas.
+\end{enumerate}
+
+\section{Conclusiones}
+
+Este trabajo presenta la propuesta y la implementación inicial de un Compilador Aumentado con IA para accesibilidad en entornos de programación. La contribución principal es el diseño de una arquitectura que sitúa las representaciones semánticas internas del compilador —tokens, AST, y en fases futuras CFG y tabla de símbolos— como fuente de verdad verificada para una capa de interpretación basada en IA.
+
+El compilador de MiniLang, con sus 78 pruebas automatizadas pasando satisfactoriamente, demuestra la viabilidad técnica del enfoque y establece la base sobre la que se construirán las fases de análisis semántico, generación de CFG e integración con modelos de lenguaje. La idea central se mantiene: el compilador ya comprende formalmente el código; la tarea pendiente es comunicar esa comprensión de forma accesible para todos los usuarios.
+
+
+% --- Referencias ---
+\begin{thebibliography}{99}
+
+\bibitem{codetalk}
+V. Potluri, A. Begel, M. Barnett, et al.,
+"CodeTalk: Improving Programming Environment Accessibility for Visually Impaired Developers,"
+in \textit{Proceedings of the 2018 CHI Conference on Human Factors in Computing Systems}, ACM, 2018.
+
+\bibitem{accessible_blockly}
+E. Schanzer and S. Bahram,
+"Accessible Blockly: An Accessible Programming Blocks Editor,"
+in \textit{Proceedings of ACM SIGACCESS}, 2022.
+
+\bibitem{genai_accessibility}
+S. Savage, C. Flores-Saviaga, et al.,
+"The Impact of Generative AI Coding Assistants on Developers Who Are Visually Impaired,"
+arXiv preprint arXiv:2503.16491, 2025.
+
+\end{thebibliography}
+
+\end{document}
