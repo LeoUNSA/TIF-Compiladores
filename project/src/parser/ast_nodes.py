@@ -266,7 +266,15 @@ class ExprStmt(Statement):
 
 @dataclass
 class Expression(Node, ABC):
-    """Nodo base para expresiones."""
+    """Nodo base para expresiones.
+
+    `inferred_type` lo rellena el analizador semántico (SemanticAnalyzer) con
+    el tipo estático deducido ("int", "float", "bool", "string", "void" o None
+    si hubo error). Queda disponible para el CFG y la capa de IA.
+    """
+    inferred_type: Optional[str] = field(
+        default=None, compare=False, repr=False, kw_only=True
+    )
 
 
 @dataclass

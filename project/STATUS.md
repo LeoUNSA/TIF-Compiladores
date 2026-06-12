@@ -65,13 +65,31 @@ project/
 │   ├── lexer/
 │   │   ├── tokens.py        ← TokenType (68 tipos), Token, KEYWORDS
 │   │   └── lexer.py         ← Lexer completo
-│   └── parser/
-│       ├── ast_nodes.py     ← 20+ nodos AST + patrón Visitor
-│       ├── parser.py        ← Parser recursivo descendente (gramática EBNF)
-│       └── ast_printer.py   ← Pretty-printer del AST
+│   ├── parser/
+│   │   ├── ast_nodes.py     ← 20+ nodos AST + patrón Visitor
+│   │   ├── parser.py        ← Parser recursivo descendente (gramática EBNF)
+│   │   └── ast_printer.py   ← Pretty-printer del AST
+│   ├── semantic/
+│   │   ├── symbols.py       ← Symbol, Scope, SymbolTable (ámbitos anidados)
+│   │   └── analyzer.py      ← SemanticAnalyzer (Visitor): tipos + scopes
+│   ├── cfg/
+│   │   ├── blocks.py        ← BasicBlock, ControlFlowGraph, format_cfg
+│   │   └── builder.py       ← CFGBuilder (Visitor): un CFG por función
+│   ├── serialize/
+│   │   ├── json_serializer.py ← JsonSerializer (Visitor): AST → dict
+│   │   └── document.py      ← serialize_program: AST+símbolos+CFG+diagnósticos
+│   └── ai/                  ← capa de IA (Ollama, solo stdlib)
+│       ├── client.py        ← OllamaClient (urllib, /api/generate)
+│       ├── context.py       ← selección de contexto por consulta
+│       ├── prompts.py       ← prompt de sistema + plantillas (español)
+│       └── assistant.py     ← orquestador (cliente inyectable)
 └── tests/
     ├── test_lexer.py        ← 31 tests
-    └── test_parser.py       ← 47 tests
+    ├── test_parser.py       ← 47 tests
+    ├── test_semantic.py     ← 33 tests
+    ├── test_cfg.py          ← 15 tests
+    ├── test_serialize.py    ← 10 tests
+    └── test_ai.py           ← 10 tests (sin red, cliente falso)
 ```
 
 ---
@@ -88,6 +106,27 @@ python -m venv .venv
 
 # Ver solo el flujo de tokens
 .venv/bin/python main.py --tokens samples/hello.ml
+
+# Analizar + mostrar la tabla de símbolos del ámbito global
+.venv/bin/python main.py --symbols samples/factorial.ml
+
+# Ver un programa con errores semánticos (diagnóstico completo)
+.venv/bin/python main.py samples/type_error.ml
+
+# Mostrar el Grafo de Flujo de Control (un CFG por función)
+.venv/bin/python main.py --cfg samples/control_flow.ml
+
+# Emitir el documento semántico (JSON) que consume la capa de IA
+.venv/bin/python main.py --json samples/factorial.ml
+
+# ── Consultas en lenguaje natural (requieren Ollama) ──────────────────────────
+# Requisitos: `ollama serve` corriendo y el modelo descargado:
+#   ollama pull llama3.2:3b
+.venv/bin/python main.py --navigate samples/factorial.ml
+.venv/bin/python main.py --explain-function factorial samples/factorial.ml
+.venv/bin/python main.py --describe resultado samples/factorial.ml
+.venv/bin/python main.py --explain-error samples/type_error.ml
+# Modelo alternativo: --model qwen2.5:7b  (o export MINILANG_MODEL=...)
 
 # Correr tests
 .venv/bin/python -m pytest tests/ -v
@@ -114,13 +153,54 @@ python -m venv .venv
 - **AST con patrón Visitor**: permite añadir recorridos (análisis semántico, CFG, serialización IA) sin tocar los nodos.
 - **ASTPrinter**: genera representación indentada del AST, legible por humanos y procesable por la capa de IA.
 
+### Analizador Semántico (`src/semantic/`)
+
+- **Tabla de símbolos** (`symbols.py`): `Symbol` (var/param/func con tipo, posición y, para funciones, tipos de parámetros), `Scope` con enlace al padre y `SymbolTable` como pila de ámbitos anidados (global → función → bloque → for).
+- **SemanticAnalyzer** (`analyzer.py`): tercer `Visitor` del AST. Verifica de forma **estricta** (sin coerción `int`↔`float`):
+  - variables/funciones no declaradas y redeclaraciones en el mismo ámbito,
+  - compatibilidad de tipos en inicializadores, asignaciones (`=` y compuestas), operadores aritméticos/relacionales/lógicos y unarios,
+  - aridad y tipos de argumentos en llamadas; tipo de retorno frente a la firma,
+  - condiciones `bool` en `if`/`while`/`for`,
+  - `break`/`continue` solo dentro de bucles.
+- **Pre-pase de firmas**: registra todas las funciones antes de analizar cuerpos ⇒ llamadas hacia adelante y recursión.
+- **Recolección de todos los errores** (no aborta en el primero) con tipo "veneno" (`None`) para evitar cascadas. Decora cada `Expression` con `inferred_type` para el futuro CFG y la capa de IA.
+- CLI: `--symbols` vuelca la tabla del ámbito global; los errores se imprimen a `stderr` con `línea:columna`.
+
+### Grafo de Flujo de Control (`src/cfg/`)
+
+- **Estructuras** (`blocks.py`): `BasicBlock` (secuencia de sentencias + aristas + condición de control opcional), `Edge` (arista etiquetada `true`/`false`/`break`/`continue`), `ControlFlowGraph` (bloques, `entry`/`exit` únicos). `format_cfg` produce una representación textual lineal y accesible.
+- **CFGBuilder** (`builder.py`): cuarto `Visitor` del AST. Construye **un CFG por función**. Hila un "bloque actual" que se vuelve `None` tras `return`/`break`/`continue` (marca el código inalcanzable). Modela:
+  - `if`/`else` con ramas `true`/`false` y bloque de convergencia (`if.end`); si ambas ramas terminan, no se crea convergencia,
+  - `while` con bloque de condición, cuerpo y arista de retroceso,
+  - `for` con bloque de condición, cuerpo, `for.update` (destino de `continue`) y salida,
+  - `break` → salida del bucle, `continue` → cabecera (`while`) o `update` (`for`).
+- Las expresiones se tratan de forma atómica (no se modela el cortocircuito de `&&`/`||`). CLI: `--cfg`.
+
+### Serialización JSON (`src/serialize/`)
+
+- **JsonSerializer** (`json_serializer.py`): quinto `Visitor`. Convierte cualquier nodo AST en un diccionario JSON-compatible; cada expresión incluye su `type` (= `inferred_type` del análisis semántico) ⇒ contexto verificado, no texto crudo.
+- **serialize_program** (`document.py`): ensambla el "documento semántico" que consume el LLM, combinando las tres fuentes de verdad: `functions` (firma + `params` + `locals` con tipo/posición/scope + `ast` decorado + `cfg`), `globals`, y `diagnostics` (errores semánticos con posición).
+- CLI: `--json` emite el documento **siempre** (con o sin errores; los diagnósticos van dentro), pensado para consultas tipo `--explain-error`.
+
+### Capa de IA (`src/ai/`)
+
+- **LLM auto-hospedado vía Ollama** (`client.py`): `OllamaClient` habla con `http://localhost:11434/api/generate` usando solo `urllib` (sin dependencias nuevas). Comprueba salud (`available()`) y presencia del modelo (`has_model()`). Configurable por `OLLAMA_HOST` / `MINILANG_MODEL`; modelo por defecto `llama3.2:3b`.
+- **Selección de contexto** (`context.py`): por cada consulta extrae del documento JSON solo la porción relevante (función, variable + su inicializador, resumen estructural, o diagnósticos + líneas de fuente).
+- **Prompts** (`prompts.py`): prompt de sistema que **ancla** al modelo a los datos formales del compilador (no inventar, español, salida apta para lector de pantalla).
+- **Assistant** (`assistant.py`): orquestador con cliente **inyectable** (se prueba sin red). Consultas: `--explain-function`, `--describe`, `--explain-error`, `--navigate`.
+- El núcleo del compilador sigue **sin dependencias externas**; la capa de IA se importa de forma perezosa solo cuando se usa una de esas flags.
+
 ### Tests
 
 | Suite | Tests | Estado |
 |---|---|---|
 | `test_lexer.py` | 31 | ✅ todos pasan |
 | `test_parser.py` | 47 | ✅ todos pasan |
-| **Total** | **78** | ✅ |
+| `test_semantic.py` | 33 | ✅ todos pasan |
+| `test_cfg.py` | 15 | ✅ todos pasan |
+| `test_serialize.py` | 10 | ✅ todos pasan |
+| `test_ai.py` | 10 | ✅ todos pasan (sin red) |
+| **Total** | **146** | ✅ |
 
 ---
 
@@ -132,24 +212,23 @@ python -m venv .venv
 | **Analizador Léxico** | ✅ Completo | 68 tokens, errores con posición |
 | **Analizador Sintáctico** | ✅ Completo | Descenso recursivo, gramática EBNF |
 | **AST + Visitor** | ✅ Completo | 20+ nodos, ASTPrinter |
-| **Analizador Semántico** | ⏳ Pendiente | Verificación de tipos, alcances |
-| **Tabla de Símbolos** | ⏳ Pendiente | Variables, funciones, scopes |
-| **Generación de CFG** | ⏳ Pendiente | Bloques básicos, aristas de flujo |
-| **Serialización para IA** | ⏳ Pendiente | AST → JSON/prompt estructurado |
-| **Integración LLM** | ⏳ Pendiente | Capa de interpretación con contexto semántico |
-| **Interfaz accesible** | ⏳ Pendiente | Salida para lector de pantalla / navegación por teclado |
+| **Analizador Semántico** | ✅ Completo | Tipos estrictos, scopes, retorno, flujo; recolecta todos los errores |
+| **Tabla de Símbolos** | ✅ Completo | Symbol/Scope/SymbolTable, ámbitos anidados |
+| **Generación de CFG** | ✅ Completo | Bloques básicos, aristas, un CFG por función |
+| **Serialización para IA** | ✅ Completo | AST+símbolos+CFG+diagnósticos → JSON (`--json`) |
+| **Integración LLM** | ✅ Completo | Ollama (llama3.2:3b); 4 consultas en lenguaje natural |
+| **Interfaz accesible** | ◐ Parcial | Salida en texto plano para lector de pantalla; falta navegación interactiva |
 | **Evaluación con usuarios** | ⏳ Pendiente | Estudio empírico con participantes |
 
-### Progreso general de la propuesta: ~30%
+### Progreso general de la propuesta: ~90%
 
-Las fases implementadas (léxico + sintáctico + AST) constituyen la base fundamental sobre la que se construye todo lo demás. Sin un AST correcto no es posible hacer análisis semántico, CFG ni integración con IA.
+El flujo completo de la propuesta funciona de extremo a extremo: código MiniLang → léxico → sintáctico → semántico → CFG → documento JSON → **LLM auto-hospedado (Ollama) → explicación accesible en lenguaje natural**. Las cuatro consultas (`--explain-function`, `--describe`, `--explain-error`, `--navigate`) responden ancladas en las representaciones verificadas del compilador.
 
 ---
 
 ## Próximos pasos sugeridos
 
-1. **Analizador semántico** — verificar tipos en expresiones, detectar variables no declaradas, resolver alcances (scopes anidados por bloques/funciones).
-2. **Tabla de símbolos** — estructura de diccionario anidado con tipo, posición de declaración y alcance.
-3. **Generación de CFG** — a partir del AST decorado, construir el grafo de flujo de control.
-4. **Serialización** — exportar AST + tabla de símbolos a JSON para alimentar el contexto del LLM.
-5. **Integración con LLM** — diseño del prompt que combine representaciones del compilador con la consulta del usuario.
+1. **Calidad de respuestas** — `llama3.2:3b` a veces ignora datos (p. ej. ramas de un `if`) o sugiere sintaxis ajena a MiniLang. Evaluar un modelo mayor (`qwen2.5:7b`) y endurecer los prompts (few-shot con ejemplos de MiniLang).
+2. **Interfaz accesible interactiva** — más allá del texto plano: navegación por funciones/bloques con teclado.
+3. **Evaluación empírica** — estudio con desarrolladores con discapacidad visual: comprensión, navegación, depuración (NASA-TLX, tiempo, tasa de error).
+4. **Errores léxicos/sintácticos en `--explain-error`** — hoy la capa de IA requiere un AST válido; extenderla para explicar también fallos de parseo.
